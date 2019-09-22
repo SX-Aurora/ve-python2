@@ -1,0 +1,90 @@
+diff -Naur Python-2.7.16.ori/Modules/posixmodule.c Python-2.7.16.nec/Modules/posixmodule.c
+--- Python-2.7.16.ori/Modules/posixmodule.c	2019-03-02 19:17:42.000000000 +0100
++++ Python-2.7.16.nec/Modules/posixmodule.c	2019-07-21 15:12:37.294293245 +0200
+@@ -6677,8 +6677,13 @@
+         return NULL;
+     Py_BEGIN_ALLOW_THREADS
+     for (i = fd_from; i < fd_to; i++)
+-        if (_PyVerify_fd(i))
++        if (_PyVerify_fd(i)) {
++#ifdef __NEC__
++            // Reserved file descriptors for VE management
++            if (i != 3 && i != 4)
++#endif
+             close(i);
++        }
+     Py_END_ALLOW_THREADS
+     Py_RETURN_NONE;
+ }
+diff -Naur Python-2.7.16.ori/Objects/obmalloc.c Python-2.7.16.nec/Objects/obmalloc.c
+--- Python-2.7.16.ori/Objects/obmalloc.c	2019-03-02 19:17:42.000000000 +0100
++++ Python-2.7.16.nec/Objects/obmalloc.c	2019-07-21 12:05:54.614046495 +0200
+@@ -214,7 +214,11 @@
+  * Arenas are allocated with mmap() on systems supporting anonymous memory
+  * mappings to reduce heap fragmentation.
+  */
++#ifdef __NEC__
++#define ARENA_SIZE              (65536 << 10)   /* 64MiB */
++#else
+ #define ARENA_SIZE              (256 << 10)     /* 256KiB */
++#endif
+ 
+ #ifdef WITH_MEMORY_LIMITS
+ #define MAX_ARENAS              (SMALL_MEMORY_LIMIT / ARENA_SIZE)
+diff -Naur Python-2.7.16.ori/Python/dtoa.c Python-2.7.16.nec/Python/dtoa.c
+--- Python-2.7.16.ori/Python/dtoa.c	2019-03-02 19:17:42.000000000 +0100
++++ Python-2.7.16.nec/Python/dtoa.c	2019-06-25 11:44:36.396291449 +0200
+@@ -1503,6 +1503,18 @@
+     return 0;
+ }
+ 
++#ifdef __NEC__
++// PSR HPCE0048: value -0.0 not correctly handle by NEC C Compiler
++static double nec_setsign(const double v)
++{
++  double res = v;
++  PY_UINT64_T *p = (PY_UINT64_T *) &res;
++  PY_UINT64_T mask = ((PY_UINT64_T) 1) << 63;
++  p[0] = p[0] | mask;
++  return res;
++}
++#endif
++
+ double
+ _Py_dg_strtod(const char *s00, char **se)
+ {
+@@ -2236,7 +2248,11 @@
+     }
+ 
+   ret:
++#ifdef __NEC__
++    return sign ? nec_setsign(dval(&rv)) : dval(&rv);
++#else
+     return sign ? -dval(&rv) : dval(&rv);
++#endif
+ 
+   parse_error:
+     return 0.0;
+@@ -2246,14 +2262,22 @@
+     return -1.0;
+ 
+   undfl:
++#ifdef __NEC__
++    return sign ? nec_setsign(0.0) : 0.0;
++#else
+     return sign ? -0.0 : 0.0;
++#endif
+ 
+   ovfl:
+     errno = ERANGE;
+     /* Can't trust HUGE_VAL */
+     word0(&rv) = Exp_mask;
+     word1(&rv) = 0;
++#ifdef __NEC__
++    return sign ? nec_setsign(dval(&rv)) : dval(&rv);
++#else
+     return sign ? -dval(&rv) : dval(&rv);
++#endif
+ 
+ }
+ 

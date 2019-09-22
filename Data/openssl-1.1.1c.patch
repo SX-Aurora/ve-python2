@@ -1,0 +1,39 @@
+diff -Naur openssl-1.1.1c.ori/include/internal/refcount.h openssl-1.1.1c.nec/include/internal/refcount.h
+--- openssl-1.1.1c.ori/include/internal/refcount.h	2019-05-28 15:12:21.000000000 +0200
++++ openssl-1.1.1c.nec/include/internal/refcount.h	2019-07-01 14:28:11.026553090 +0200
+@@ -17,7 +17,7 @@
+ # endif
+ 
+ # if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L \
+-     && !defined(__STDC_NO_ATOMICS__)
++     && !defined(__STDC_NO_ATOMICS__) && !defined(__NEC__)
+ #  include <stdatomic.h>
+ #  define HAVE_C11_ATOMICS
+ # endif
+diff -Naur openssl-1.1.1c.ori/include/internal/tsan_assist.h openssl-1.1.1c.nec/include/internal/tsan_assist.h
+--- openssl-1.1.1c.ori/include/internal/tsan_assist.h	2019-05-28 15:12:21.000000000 +0200
++++ openssl-1.1.1c.nec/include/internal/tsan_assist.h	2019-07-01 14:29:44.009859233 +0200
+@@ -48,7 +48,7 @@
+  */
+ 
+ #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L \
+-    && !defined(__STDC_NO_ATOMICS__)
++    && !defined(__STDC_NO_ATOMICS__) && !defined(__NEC__)
+ # include <stdatomic.h>
+ 
+ # if defined(ATOMIC_POINTER_LOCK_FREE) \
+diff -Naur openssl-1.1.1c.ori/include/openssl/bio.h openssl-1.1.1c.nec/include/openssl/bio.h
+--- openssl-1.1.1c.ori/include/openssl/bio.h	2019-05-28 15:12:21.000000000 +0200
++++ openssl-1.1.1c.nec/include/openssl/bio.h	2019-07-01 14:15:19.874445400 +0200
+@@ -752,6 +752,11 @@
+ #   endif
+ #  endif
+ # endif
++
++#ifdef __NEC__
++# undef ossl_bio__attr__
++# define ossl_bio__attr__(x)
++#endif
+ int BIO_printf(BIO *bio, const char *format, ...)
+ ossl_bio__attr__((__format__(ossl_bio__printf__, 2, 3)));
+ int BIO_vprintf(BIO *bio, const char *format, va_list args)
