@@ -49,3 +49,8 @@ This will download and build **zlib**, **openssl**, **libffi** and
 **python**. They get installed into the path specified by
 `PREFIX`. The sources end up in the `Data` subdirectory.
 
+
+## Outro
+
+Any suggestions, contributions are welcome! A spec file for building
+an RPM, for example...
